@@ -10,21 +10,17 @@ The goals / steps of this project are the following:
 [car]: ./images/car.png
 [notcar]: ./images/notcar.png
 [HOG]: ./images/HOG.png
-[image2]: ./examples/HOG_example.jpg
-[image3]: ./examples/sliding_windows.jpg
-[image4]: ./examples/sliding_window.jpg
-[image5]: ./examples/bboxes_and_heat.png
-[image6]: ./examples/labels_map.png
-[image7]: ./examples/output_bboxes.png
+[test1]: ./images/test1.png
+[test2]: ./images/test2.png
 [video1]: ./test_videos_output/result.mp4
 
 
 ---
 ### Histogram of Oriented Gradients (HOG)
 
-#### 1. Explain how (and identify where in your code) you extracted HOG features from the training images.
+#### 1. How I extracted HOG features from the training images
 
-The HOG feature extraction is done by the two functions defined right after the import statements in `tracking_pipeline.ipynb`: `extract_features` and `get_hog_features` 
+The HOG feature extraction is done by the two functions defined right after the import statements in `tracking_pipeline.ipynb`: `extract_features` and `get_hog_features`, which use the skimage method `hog' 
 
 I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `cars` and `notcars` classes, respectively:
 
@@ -42,53 +38,42 @@ Here is an example using the `YUV` color space and HOG parameters of `orientatio
 
 Guess and check. My number one goal was to maximize the classifier accuracy. I iterated through a bunch of different combinations of HOG parameters and colorspace and finally settled on YUV colorspace, with 11 orientations, 16 pixels per cell, and 2 cells per block. This combination seemed to result in the highest classifier accuracy.
 
-#### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
+#### 3. How I trained a classifier using your selected HOG features.
 
 Even at accuracies of ~95%, a lot of false positives show up in the video stream. It's not until 98%+ accuracy that my pipeline starts to perform well. Thinking I was being clever, I originally used an SVM with an RBF kernel (despite suggestions to use a linear kernel) and searched for optimal parameters with grid search, but found that I couldn't get an accuracy much higher than around 95%, even after choosing optimal HOG parameters, and it took a few minutes to train. As mentioned before, 95% accuracy wasn't good enough to get a good resultant video. I eventually tried a LinearSVM and it made an enormous difference. The training time dropped to a few seconds (!) and the accuracy rose to 98-99%.
 
+Training is done in the second code cell in step 2. Implementing and training an SVM is trivial thanks to sci-kit learn.
+
 ### Sliding Window Search
 
-#### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
+#### 1. How I implemented a sliding window search
+I used the `find_cars` method to take an image, a start and stop row, and a scale, and search the image via sliding windows. Of course, cars will be at a different scale in different parts of the image, so in my tracking pipeline, I actually call `find_cars` several times with different start and stop rows and different scales for the sliding windows.
 
-I decided to search random window positions at random scales all over the image and came up with this (ok just kidding I didn't actually ;):
 
-![alt text][image3]
+#### 2. Examples of test images to demonstrate how the pipeline is working.
+The optimizations i made were extracting HOG features from the entire image at once, and only searching a small number of windows in the image where it was likely that cars would be. A couple output images are posted below. There are lots of false positives, even with a 98%+ classifier accuracy. I used the heatmap method to get rid of these, discussed below.
 
-#### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
-Ultimately I searched on two scales using YCrCb 3-channel HOG features plus spatially binned color and histograms of color in the feature vector, which provided a nice result.  Here are some example images:
 
-![alt text][image4]
+![alt text][test1]
+![alt text][test2]
 ---
 
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+Here's a [link to my video result](./test_videos_output)
 
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
-
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
-
-### Here are six frames and their corresponding heatmaps:
-
-![alt text][image5]
-
-### Here is the output of `scipy.ndimage.measurements.label()` on the integrated heatmap from all six frames:
-![alt text][image6]
-
-### Here the resulting bounding boxes are drawn onto the last frame in the series:
-![alt text][image7]
-
-
+As I said previously, I used the `find_cars` method several times in the detection pipeline. All the sliding windows overlapped, so in most cases, a car in the image would result in several overlapping bounding boxes. After every search at different scales, I used the `add_heat` method to increment the pixels that were within a bounding box. After all searches were complete, I thresholded the heatmap with `heat_threshold` so that only locations with multiple detections were kept. I then used `scipy.ndimage.measurements.label()' to uniquely label each remaining area and drew a bounding box around each one.
 
 ---
 
 ### Discussion
 
-#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+#### 1. Where will the pipeline likely fail?  What could I do to make it more robust?
+I found the feature engineering necessary for using an SVM to be extremely tedious, and not work as well as I had hoped. Further, it was fairly computationally expensive, and ran on my modern laptop at only about 1.5 frames/second. As with many machine learning methods, it would fail to recognize cars that are not generally described by the training set. If a tractor trailer or Dunkin Donuts marketing car drives by, my pipeline would completely fail to recognize it. The solution for my particulr pipeline is more training data.
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+If I were to do the project again, I would use deep learning and take a real-time object detection approach. I used an implementation of YOLOv3, pre-trained on the CoCo dataset, and it performed better on the project video than my pipeline, while also running faster. Which is of course a little disappointing. Lastly, the great part about deep learning is no feature engineering is necessary...simply feed the entire image into the classifier and it will draw bounding boxes. Of course, building a network is significantly more involved than a couple API calls to set up and train an SVM. Personally, I would go for the deep learning method if I was implementing this project for a real self-driving car, but the method you pick all depends on your goals and what you enjoy doing.
