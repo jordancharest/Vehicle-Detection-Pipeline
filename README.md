@@ -7,7 +7,9 @@ The goals / steps of this project are the following:
 * Run the pipeline on a video stream and output a resulting video with bounding boxes drawn around all cars
 
 [//]: # (Image References)
-[image1]: ./examples/car_not_car.png
+[car]: ./images/car.png
+[notcar]: ./images/notcar.png
+[HOG]: ./images/HOG.png
 [image2]: ./examples/HOG_example.jpg
 [image3]: ./examples/sliding_windows.jpg
 [image4]: ./examples/sliding_window.jpg
@@ -24,24 +26,25 @@ The goals / steps of this project are the following:
 
 The HOG feature extraction is done by the two functions defined right after the import statements in `tracking_pipeline.ipynb`: `extract_features` and `get_hog_features` 
 
-I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `cars` and `notcars` classes:
+I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `cars` and `notcars` classes, respectively:
 
-![alt text][image1]
+![alt text][car]
+![alt_text][notcar]
 
 I then explored different color spaces and different `skimage.hog()` parameters (`orientations`, `pixels_per_cell`, and `cells_per_block`).  I grabbed random images from each of the two classes and displayed them to get a feel for what the `skimage.hog()` output looks like.
 
-Here is an example using the `YCrCb` color space and HOG parameters of `orientations=8`, `pixels_per_cell=(8, 8)` and `cells_per_block=(2, 2)`:
+Here is an example using the `YUV` color space and HOG parameters of `orientations=11`, `pixels_per_cell=(16, 16)` and `cells_per_block=(2, 2)`:
 
 
-![alt text][image2]
+![alt text][HOG]
 
-#### 2. Explain how you settled on your final choice of HOG parameters.
+#### 2. How did I settle on my final choice of HOG parameters?
 
-I tried various combinations of parameters and...
+Guess and check. My number one goal was to maximize the classifier accuracy. I iterated through a bunch of different combinations of HOG parameters and colorspace and finally settled on YUV colorspace, with 11 orientations, 16 pixels per cell, and 2 cells per block. This combination seemed to result in the highest classifier accuracy.
 
 #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 
-I trained a linear SVM using...
+Even at accuracies of ~95%, a lot of false positives show up in the video stream. It's not until 98%+ accuracy that my pipeline starts to perform well. Thinking I was being clever, I originally used an SVM with an RBF kernel (despite suggestions to use a linear kernel) and searched for optimal parameters with grid search, but found that I couldn't get an accuracy much higher than around 95%, even after choosing optimal HOG parameters, and it took a few minutes to train. As mentioned before, 95% accuracy wasn't good enough to get a good resultant video. I eventually tried a LinearSVM and it made an enormous difference. The training time dropped to a few seconds (!) and the accuracy rose to 98-99%.
 
 ### Sliding Window Search
 
