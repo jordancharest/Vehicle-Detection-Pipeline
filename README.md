@@ -18,7 +18,7 @@ The goals / steps of this project are the following:
 ---
 ### Histogram of Oriented Gradients (HOG)
 
-#### 1. How I extracted HOG features from the training images
+#### 1. How I extracted HOG features from the training images:
 
 The HOG feature extraction is done by the two functions defined right after the import statements in `tracking_pipeline.ipynb`: `extract_features` and `get_hog_features`, which use the skimage method `hog' 
 
@@ -34,11 +34,11 @@ Here is an example using the `YUV` color space and HOG parameters of `orientatio
 
 ![alt text][HOG]
 
-#### 2. How did I settle on my final choice of HOG parameters?
+#### 2. How I settled on my final choice of HOG parameters:
 
 Guess and check. My number one goal was to maximize the classifier accuracy. I iterated through a bunch of different combinations of HOG parameters and colorspace and finally settled on YUV colorspace, with 11 orientations, 16 pixels per cell, and 2 cells per block. This combination seemed to result in the highest classifier accuracy.
 
-#### 3. How I trained a classifier using your selected HOG features.
+#### 3. How I trained a classifier using your selected HOG features:
 
 Even at accuracies of ~95%, a lot of false positives show up in the video stream. It's not until 98%+ accuracy that my pipeline starts to perform well. Thinking I was being clever, I originally used an SVM with an RBF kernel (despite suggestions to use a linear kernel) and searched for optimal parameters with grid search, but found that I couldn't get an accuracy much higher than around 95%, even after choosing optimal HOG parameters, and it took a few minutes to train. As mentioned before, 95% accuracy wasn't good enough to get a good resultant video. I eventually tried a LinearSVM and it made an enormous difference. The training time dropped to a few seconds (!) and the accuracy rose to 98-99%.
 
@@ -46,11 +46,11 @@ Training is done in the second code cell in step 2. Implementing and training an
 
 ### Sliding Window Search
 
-#### 1. How I implemented a sliding window search
+#### 1. How I implemented a sliding window search:
 I used the `find_cars` method to take an image, a start and stop row, and a scale, and search the image via sliding windows. Of course, cars will be at a different scale in different parts of the image, so in my tracking pipeline, I actually call `find_cars` several times with different start and stop rows and different scales for the sliding windows.
 
 
-#### 2. Examples of test images to demonstrate how the pipeline is working.
+#### 2. Examples of test images to demonstrate how the pipeline is working:
 The optimizations i made were extracting HOG features from the entire image at once, and only searching a small number of windows in the image where it was likely that cars would be. A couple output images are posted below. There are lots of false positives, even with a 98%+ classifier accuracy. I used the heatmap method to get rid of these, discussed below.
 
 
@@ -60,12 +60,10 @@ The optimizations i made were extracting HOG features from the entire image at o
 ---
 
 ### Video Implementation
-
-#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
 Here's a [link to my video result](./test_videos_output)
 
 
-#### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
+#### 2. How I implemented a filter for false positives and a method for combining overlapping bounding boxes:
 
 As I said previously, I used the `find_cars` method several times in the detection pipeline. All the sliding windows overlapped, so in most cases, a car in the image would result in several overlapping bounding boxes. After every search at different scales, I used the `add_heat` method to increment the pixels that were within a bounding box. After all searches were complete, I thresholded the heatmap with `heat_threshold` so that only locations with multiple detections were kept. I then used `scipy.ndimage.measurements.label()' to uniquely label each remaining area and drew a bounding box around each one.
 
