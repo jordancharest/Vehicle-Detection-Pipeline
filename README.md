@@ -65,7 +65,7 @@ Here's a [link to my video result](./test_videos_output)
 
 #### 2. How I implemented a filter for false positives and a method for combining overlapping bounding boxes:
 
-As I said previously, I used the `find_cars` method several times in the detection pipeline. All the sliding windows overlapped, so in most cases, a car in the image would result in several overlapping bounding boxes. After every search at different scales, I used the `add_heat` method to increment the pixels that were within a bounding box. After all searches were complete, I thresholded the heatmap with `heat_threshold` so that only locations with multiple detections were kept. I then used `scipy.ndimage.measurements.label()' to uniquely label each remaining area and drew a bounding box around each one.
+As I said previously, I used the `find_cars` method several times in the detection pipeline. All the sliding windows overlapped, so in most cases, a car in the image would result in several overlapping bounding boxes. After every search at different scales, I used the `add_heat` method to increment the pixels that were within a bounding box. At the end of each frame, I add the resultant heat map to a deque. I then take the sum of the latest 15 frames and threshold based on the accumulated heatmap using `heat_threshold`. This works well in eliminating false detections and keeping the bounding boxes stable.I then used `scipy.ndimage.measurements.label()' to uniquely label each remaining area and drew a bounding box around each one. 
 
 ---
 
